@@ -15,10 +15,11 @@ const {
   modbus_port: MODBUS_PORT,
   mqtt_broker: MQTT_BROKER,
   mqtt_topic: MQTT_TOPIC,
+  mqtt_alarm_topic: MQTT_ALARM_TOPIC, // Alarm-Topic laden
   mqtt_username: MQTT_USERNAME,
   mqtt_password: MQTT_PASSWORD,
   max_registers_per_request: MAX_REGISTERS_PER_REQUEST,
-  polling_interval: POLLING_INTERVAL // Abfragezyklus in Millisekunden
+  polling_interval: POLLING_INTERVAL
 } = config;
 
 const modbusClient = new ModbusRTU();
@@ -58,6 +59,7 @@ function groupAddressesDynamically(onlyNonRTopics = false) {
 // Funktion zum Lesen der Modbus-Daten mit Berücksichtigung des 5-Zyklus
 async function readModbusDataWithCycle() {
   const payload = [];
+  const alarmPayload = []; // Separate Payload für Alarme
   
   // Nur alle 5 Zyklen _R_-Topics einbeziehen
   const includeRTopics = readCycleCounter % 5 === 0;
@@ -76,9 +78,12 @@ async function readModbusDataWithCycle() {
 
         group.forEach((address, index) => {
           const entry = modbusAddresses[address];
+          const value = data.data[address - startAddress] * entry.factor;
+
+          // Haupt-Payload zusammenstellen
           payload.push({
             address: address,
-            value: data.data[address - startAddress] * entry.factor,
+            value: value,
             topic: entry.topic,
             type: entry.type,
             gw: entry.gw,
@@ -90,14 +95,33 @@ async function readModbusDataWithCycle() {
             factor: entry.factor,
             timestamp: Date.now()
           });
+
+          // Wenn `alarm: true`, zur Alarm-Payload hinzufügen
+          if (entry.alarm) {
+            alarmPayload.push({
+              address: address,
+              value: value,
+              topic: entry.topic,
+              gw: entry.gw,
+            });
+          }
         });
       } catch (err) {
         console.error(`Fehler beim Lesen des Modbus-Blocks ab Adresse ${startAddress}:`, err);
       }
     }
 
-    mqttClient.publish(MQTT_TOPIC, JSON.stringify(payload, null, 2)); // JSON mit Pretty-Print für bessere Lesbarkeit
+    // Haupt-Payload an Standard-MQTT-Topic senden
+    mqttClient.publish(MQTT_TOPIC, JSON.stringify(payload, null, 2));
     console.log(`Daten erfolgreich an MQTT gesendet: ${MQTT_TOPIC}`);
+    
+    // Falls Alarme vorhanden, sende sie an das separate Alarm-Topic
+    if (alarmPayload.length > 0) {
+      mqttClient.publish(MQTT_ALARM_TOPIC, JSON.stringify(alarmPayload, null, 2));
+      console.log(`Alarm-Daten erfolgreich an MQTT gesendet: ${MQTT_ALARM_TOPIC}`);
+    } else {
+      console.log("Keine Alarme zum Senden.");
+    }
     
   } catch (error) {
     console.error('Fehler beim Lesen der Modbus-Daten:', error);
