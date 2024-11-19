@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "modbus-serial": "^8.0.17",
-    "mqtt": "^5.10.1"
+    "mqtt": "^5.10.2",
+    "mysql2": "^3.11.4"
   }
 }

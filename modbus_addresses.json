@@ -4,12 +4,19 @@
       "modbus_port": 502,
       "mqtt_broker": "mqtt://192.168.10.31",
       "mqtt_topic": "modbus/data",
-      "mqtt_alarm_topic": "modbus/alarm",
+      "mqtt_alarm_topic": "modbus/alarm/data",
+      "mqtt_status_topic": "modbus/alarm/status", 
       "mqtt_username": "ygnis",
       "mqtt_password": "Ygnis",
       "max_registers_per_request": 120,
-      "polling_interval": 5000   
-    },
+      "polling_interval": 5000,
+      "mariadb": {
+        "host": "192.168.10.31",
+        "user": "Ygnis",
+        "password": "Ygnis6017",
+        "database": "Ycontrol",
+        "connectionLimit": 10   
+    }},
 
   
   
