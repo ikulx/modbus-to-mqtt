@@ -10,7 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "modbus-serial": "^8.0.17",
+    "modbus-serial": "^8.0.18",
     "mqtt": "^5.10.2",
     "mysql2": "^3.11.4"
   }
